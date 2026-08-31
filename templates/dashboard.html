@@ -2,14 +2,51 @@
 <html>
 <head>
     <title>Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <h1>Plastic Waste Dashboard</h1>
+    <div class="app-header">
+        <span class="app-header-icon">&#9851;</span>
+        <span class="app-header-title">EcoTrack</span>
+    </div>
 
-    <canvas id="typeChart" width="400" height="200"></canvas>
-    <canvas id="locationChart" width="400" height="200"></canvas>
+    <div class="page-content">
+    <h1>Plastic Waste Dashboard</h1>
+    <p class="subtitle">Overview of reported plastic waste across all locations.</p>
+
+    <div class="dashboard-grid">
+        <div class="chart-card">
+            <h3>Reports by plastic type</h3>
+            <div class="chart-container">
+                <canvas id="typeChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <h3>Reports by location (hotspots)</h3>
+            <div class="chart-container">
+                <canvas id="locationChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    {% set hotspots = [] %}
+    {% for label, value in zip(location_labels, location_values) %}
+        {% if value >= 5 %}
+            {% set _ = hotspots.append((label, value)) %}
+        {% endif %}
+    {% endfor %}
+
+    {% if hotspots %}
+    <div class="hotspot-section">
+        <h3>Urgent hotspots</h3>
+        {% for label, value in hotspots %}
+            <span class="hotspot-flag">{{ label }}: {{ value }} reports</span>
+        {% endfor %}
+    </div>
+    {% endif %}
 
     <script>
         new Chart(document.getElementById('typeChart'), {
@@ -18,10 +55,14 @@
                 labels: {{ type_labels | tojson }},
                 datasets: [{
                     data: {{ type_values | tojson }},
-                    backgroundColor: ['#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f','#edc948']
+                    backgroundColor: ['#639922', '#FAC775', '#D85A30', '#378ADD', '#7F77DD', '#D4537E']
                 }]
             },
-            options: { plugins: { title: { display: true, text: 'Reports by Plastic Type' } } }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
         });
 
         new Chart(document.getElementById('locationChart'), {
@@ -29,15 +70,21 @@
             data: {
                 labels: {{ location_labels | tojson }},
                 datasets: [{
-                    label: 'Reports per Location',
+                    label: 'Reports per location',
                     data: {{ location_values | tojson }},
-                    backgroundColor: '#4e79a7'
+                    backgroundColor: '#3B6D11'
                 }]
             },
-            options: { plugins: { title: { display: true, text: 'Reports by Location (Hotspots)' } } }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            }
         });
     </script>
 
-    <p><a href="/">Back to Form</a></p>
+    <p class="nav-links"><a href="/">Back to form</a></p>
+    </div>
 </body>
 </html>

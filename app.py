@@ -62,7 +62,9 @@ def dashboard():
         type_labels=type_labels,
         type_values=type_values,
         location_labels=location_labels,
-        location_values=location_values)
+        location_values=location_values,
+        zip=zip
+    )
 
 
 if __name__ == "__main__":

@@ -2,11 +2,20 @@
 <html>
 <head>
     <title>All Reports</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    <div class="app-header">
+        <span class="app-header-icon">&#9851;</span>
+        <span class="app-header-title">EcoTrack</span>
+    </div>
+
+    <div class="page-content">
     <h1>All Plastic Waste Reports</h1>
-    <table border="1">
+    <p class="subtitle">Every report submitted so far, most recent first.</p>
+
+    <table>
         <tr>
             <th>Location</th><th>Type</th><th>Quantity</th><th>Status</th><th>Date</th><th>Action</th>
         </tr>
@@ -15,12 +24,14 @@
             <td>{{ report['location'] }}</td>
             <td>{{ report['plastic_type'] }}</td>
             <td>{{ report['quantity_estimate'] }}</td>
-            <td>{{ report['status'] }}</td>
+            <td><span class="status-{{ report['status'] }}">{{ report['status'] }}</span></td>
             <td>{{ report['date_reported'] }}</td>
             <td><a href="/mark_cleaned/{{ report['report_id'] }}">Mark Cleaned</a></td>
         </tr>
         {% endfor %}
-        </table>
-        <p><a href="/">Back to Form</a></p>
+    </table>
+
+    <p class="nav-links"><a href="/">Back to Form</a></p>
+    </div>
 </body>
 </html>
