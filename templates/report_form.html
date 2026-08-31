@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Report Plastic Waste</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Report Plastic Waste</h1>
+
+    <form action="/submit" method="POST">
+        <label>Location:</label><br>
+        <input type="text" name="location" required><br><br>
+
+        <label>Plastic Type:</label><br>
+        <select name="plastic_type" required>
+            <option value="bottles">Bottles</option>
+            <option value="sachets">Sachets</option>
+            <option value="bags">Bags</option>
+            <option value="straws">Straws</option>
+            <option value="styrofoam">Styrofoam</option>
+            <option value="other">Other</option>
+            </select><br><br>
+
+        <label>Estimated Quantity:</label><br>
+        <select name="quantity_estimate" required>
+            <option value="small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="large">Large</option>
+        </select><br><br>
+
+        <button type="submit">Submit Report</button>
+    </form>
+    
+    <p><a href="/reports">View All Reports</a> | <a href="/dashboard">View Dashboard</a></p>
+</body>
+</html>

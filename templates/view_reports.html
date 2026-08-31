@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>All Reports</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>All Plastic Waste Reports</h1>
+    <table border="1">
+        <tr>
+            <th>Location</th><th>Type</th><th>Quantity</th><th>Status</th><th>Date</th><th>Action</th>
+        </tr>
+        {% for report in reports %}
+        <tr>
+            <td>{{ report['location'] }}</td>
+            <td>{{ report['plastic_type'] }}</td>
+            <td>{{ report['quantity_estimate'] }}</td>
+            <td>{{ report['status'] }}</td>
+            <td>{{ report['date_reported'] }}</td>
+            <td><a href="/mark_cleaned/{{ report['report_id'] }}">Mark Cleaned</a></td>
+        </tr>
+        {% endfor %}
+        </table>
+        <p><a href="/">Back to Form</a></p>
+</body>
+</html>
