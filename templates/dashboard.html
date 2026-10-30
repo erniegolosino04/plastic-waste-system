@@ -14,7 +14,49 @@
     <h1>Plastic Waste Dashboard</h1>
     <p class="subtitle">Overview of reported plastic waste across all locations.</p>
 
+    {% if is_admin %}
+    <p style="text-align:center; margin-top:0;">
+        <a class="export-btn" href="/export.csv">&#11015; Export reports (CSV)</a>
+    </p>
+    {% endif %}
+
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ total }}</div>
+            <div class="stat-label">Total reports</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number amber">{{ pending }}</div>
+            <div class="stat-label">Pending cleanup</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ cleaned }}</div>
+            <div class="stat-label">Cleaned</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ cleanup_rate }}%</div>
+            <div class="stat-label">Cleanup rate</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ this_month }}</div>
+            <div class="stat-label">Reports this month</div>
+        </div>
+    </div>
+
     <div class="dashboard-grid">
+        <div class="chart-card wide">
+            <div class="chart-head">
+                <h3>Reports over time</h3>
+                <div class="toggle-group">
+                    <button type="button" class="toggle-btn active" id="weeklyBtn">Weekly</button>
+                    <button type="button" class="toggle-btn" id="monthlyBtn">Monthly</button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="timeChart"></canvas>
+            </div>
+        </div>
+
         <div class="chart-card">
             <h3>Reports by plastic type</h3>
             <div class="chart-container">
@@ -23,6 +65,13 @@
         </div>
 
         <div class="chart-card">
+            <h3>Cleaned vs. sighted</h3>
+            <div class="chart-container">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card wide">
             <h3>Reports by location (hotspots)</h3>
             <div class="chart-container">
                 <canvas id="locationChart"></canvas>
@@ -49,6 +98,74 @@
     <script>
         Chart.register(ChartDataLabels);
 
+        // Shows "42.5%" on each slice, and nothing on empty slices
+        function percentLabel(value, ctx) {
+            if (!value) return null;
+            var data = ctx.chart.data.datasets[0].data;
+            var total = data.reduce(function (a, b) { return a + b; }, 0);
+            return (value / total * 100).toFixed(1) + '%';
+        }
+
+        var sliceLabels = {
+            color: '#FFFFFF',
+            font: { weight: 'bold', size: 12 },
+            formatter: percentLabel
+        };
+
+        // ----- Reports over time (weekly / monthly toggle) -----
+        function weekLabel(s) {
+            return 'Wk of ' + new Date(s + 'T00:00:00').toLocaleDateString('en', { month: 'short', day: 'numeric' });
+        }
+        function monthLabel(s) {
+            var p = s.split('-');
+            return new Date(p[0], p[1] - 1, 1).toLocaleString('en', { month: 'short', year: 'numeric' });
+        }
+
+        var weekly = {
+            labels: {{ weekly_labels | tojson }}.map(weekLabel),
+            values: {{ weekly_values | tojson }}
+        };
+        var monthly = {
+            labels: {{ monthly_labels | tojson }}.map(monthLabel),
+            values: {{ monthly_values | tojson }}
+        };
+
+        var timeChart = new Chart(document.getElementById('timeChart'), {
+            type: 'line',
+            data: {
+                labels: weekly.labels,
+                datasets: [{
+                    label: 'Reports',
+                    data: weekly.values,
+                    borderColor: '#3B6D11',
+                    backgroundColor: 'rgba(99, 153, 34, 0.15)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, datalabels: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            }
+        });
+
+        function showPeriod(data, activeBtn, otherBtn) {
+            timeChart.data.labels = data.labels;
+            timeChart.data.datasets[0].data = data.values;
+            timeChart.update();
+            activeBtn.classList.add('active');
+            otherBtn.classList.remove('active');
+        }
+
+        var weeklyBtn = document.getElementById('weeklyBtn');
+        var monthlyBtn = document.getElementById('monthlyBtn');
+        weeklyBtn.addEventListener('click', function () { showPeriod(weekly, weeklyBtn, monthlyBtn); });
+        monthlyBtn.addEventListener('click', function () { showPeriod(monthly, monthlyBtn, weeklyBtn); });
+
+        // ----- Plastic type pie -----
         new Chart(document.getElementById('typeChart'), {
             type: 'pie',
             data: {
@@ -61,21 +178,28 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom' },
-                    datalabels: {
-                        color: '#FFFFFF',
-                        font: { weight: 'bold', size: 12 },
-                        formatter: function (value, ctx) {
-                            var data = ctx.chart.data.datasets[0].data;
-                            var total = data.reduce(function (a, b) { return a + b; }, 0);
-                            return (value / total * 100).toFixed(1) + '%';
-                        }
-                    }
-                }
+                plugins: { legend: { position: 'bottom' }, datalabels: sliceLabels }
             }
         });
 
+        // ----- Cleaned vs sighted -----
+        new Chart(document.getElementById('statusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Sighted (pending)', 'Cleaned'],
+                datasets: [{
+                    data: [{{ pending }}, {{ cleaned }}],
+                    backgroundColor: ['#EF9F27', '#639922']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' }, datalabels: sliceLabels }
+            }
+        });
+
+        // ----- Location bars -----
         new Chart(document.getElementById('locationChart'), {
             type: 'bar',
             data: {
@@ -89,10 +213,7 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    datalabels: { display: false }
-                },
+                plugins: { legend: { display: false }, datalabels: { display: false } },
                 scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
             }
         });

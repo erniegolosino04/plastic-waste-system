@@ -296,5 +296,5 @@ def export_csv():
     ).fetchall()
     conn.close()
 
-    output = io.StringIO()
-    writer = csv.writer(output)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
