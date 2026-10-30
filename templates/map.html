@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reports Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    {% include "_header.html" %}
+
+    <div class="page-content">
+    <h1>Reports Map</h1>
+    <p class="subtitle">Every report that has a pinned location.</p>
+
+    <div class="map-filters">
+        <button type="button" class="toggle-btn active" data-filter="all">All ({{ pins|length }})</button>
+        <button type="button" class="toggle-btn" data-filter="sighted">Sighted</button>
+        <button type="button" class="toggle-btn" data-filter="cleaned">Cleaned</button>
+    </div>
+
+    <div id="reportsMap"></div>
+
+    <div class="map-legend">
+        <span class="dot sighted"></span> Sighted
+        <span class="dot cleaned"></span> Cleaned
+    </div>
+
+    {% if unpinned > 0 %}
+    <p class="map-hint" style="text-align:center;">{{ unpinned }} report(s) have no pin and aren't shown here.</p>
+    {% endif %}
+    </div>
+
+    <script>
+        var pins = {{ pins | tojson }};
+        var colors = { sighted: '#EF9F27', cleaned: '#639922' };
+
+        var map = L.map('reportsMap').setView([9.7872, 125.4950], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        var layers = { sighted: L.layerGroup(), cleaned: L.layerGroup() };
+        var bounds = [];
+
+        pins.forEach(function (p) {
+            var status = p.status === 'cleaned' ? 'cleaned' : 'sighted';
+
+            var marker = L.circleMarker([p.latitude, p.longitude], {
+                radius: 10,
+                color: '#FFFFFF',
+                weight: 2,
+                fillColor: colors[status],
+                fillOpacity: 0.95
+            });
+
+            // Built with textContent so user-typed text can't inject HTML
+            var box = document.createElement('div');
+            var title = document.createElement('strong');
+            title.textContent = p.location;
+            box.appendChild(title);
+            [
+                'Type: ' + p.plastic_type,
+                'Quantity: ' + p.quantity_estimate,
+                'Status: ' + status,
+                'Reported: ' + p.date_reported
+            ].forEach(function (line) {
+                box.appendChild(document.createElement('br'));
+                box.appendChild(document.createTextNode(line));
+            });
+            marker.bindPopup(box);
+
+            layers[status].addLayer(marker);
+            bounds.push([p.latitude, p.longitude]);
+        });
+
+        layers.sighted.addTo(map);
+        layers.cleaned.addTo(map);
+
+        if (bounds.length) {
+            map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
+        }
+
+        document.querySelectorAll('.map-filters .toggle-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var filter = btn.getAttribute('data-filter');
+                document.querySelectorAll('.map-filters .toggle-btn').forEach(function (b) {
+                    b.classList.remove('active');
+                });
+                btn.classList.add('active');
+
+                ['sighted', 'cleaned'].forEach(function (key) {
+                    if (filter === 'all' || filter === key) {
+                        map.addLayer(layers[key]);
+                    } else {
+                        map.removeLayer(layers[key]);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
