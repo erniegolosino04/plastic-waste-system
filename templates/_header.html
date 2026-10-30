@@ -1,0 +1,42 @@
+<div class="app-header">
+    <span class="app-header-icon">&#9851;</span>
+    <span class="app-header-title">EcoTrack</span>
+    <div class="header-auth">
+        {% if is_admin %}
+            <span class="admin-badge">Admin</span>
+            <a href="/logout">Logout</a>
+        {% else %}
+            <a href="/login">Admin Login</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="nav-buttons">
+    <a href="/" class="{{ 'active' if request.path == '/' else '' }}">Report Form</a>
+    <a href="/reports" class="{{ 'active' if request.path == '/reports' else '' }}">View Reports</a>
+    <a href="/dashboard" class="{{ 'active' if request.path == '/dashboard' else '' }}">Dashboard</a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="modal-overlay" id="popup">
+    <div class="modal-box {{ messages[0][0] }}">
+        <div class="modal-icon">{% if messages[0][0] == 'error' %}&#9888;{% else %}&#10004;{% endif %}</div>
+        {% for category, message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+        <button type="button" onclick="closePopup()">OK</button>
+    </div>
+</div>
+<script>
+    function closePopup() {
+        var p = document.getElementById("popup");
+        if (p) p.remove();
+    }
+    document.getElementById("popup").addEventListener("click", function (e) {
+        if (e.target === this) closePopup();
+    });
+    setTimeout(closePopup, 4000);
+</script>
+{% endif %}
+{% endwith %}

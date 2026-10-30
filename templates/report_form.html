@@ -4,12 +4,11 @@
     <title>Report Plastic Waste</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
-    <div class="app-header">
-        <span class="app-header-icon">&#9851;</span>
-        <span class="app-header-title">EcoTrack</span>
-    </div>
+    {% include "_header.html" %}
 
     <div class="page-content">
     <h1>Report Plastic Waste</h1>
@@ -17,29 +16,33 @@
 
     <form action="/submit" method="POST">
         <label>Location:</label>
-        <input type="text" name="location" required>
+        <input type="text" name="location" id="location" placeholder="e.g. Brgy. Taft" required>
+
+        <label>Pin the exact spot (optional):</label>
+        <button type="button" id="locateBtn" class="btn-secondary">&#128205; Use my current location</button>
+        <div id="map"></div>
+        <p class="map-hint" id="mapHint">Tap the map to drop a pin.</p>
+        <input type="hidden" name="latitude" id="latitude">
+        <input type="hidden" name="longitude" id="longitude">
 
         <label>Plastic Type:</label>
         <select name="plastic_type" required>
-            <option value="bottles">Bottles</option>
-            <option value="sachets">Sachets</option>
-            <option value="bags">Bags</option>
-            <option value="straws">Straws</option>
-            <option value="styrofoam">Styrofoam</option>
-            <option value="other">Other</option>
+            {% for value, label in plastic_types %}
+            <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
         </select>
 
         <label>Estimated Quantity:</label>
         <select name="quantity_estimate" required>
-            <option value="small">Small</option>
-            <option value="medium">Medium</option>
-            <option value="large">Large</option>
+            {% for q in quantities %}
+            <option value="{{ q }}">{{ q }}</option>
+            {% endfor %}
         </select>
 
         <button type="submit">Submit Report</button>
     </form>
-
-    <p class="nav-links"><a href="/reports">View All Reports</a> | <a href="/dashboard">View Dashboard</a></p>
     </div>
+
+    <script src="{{ url_for('static', filename='map-picker.js') }}"></script>
 </body>
 </html>

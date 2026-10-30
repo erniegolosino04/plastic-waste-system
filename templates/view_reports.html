@@ -6,10 +6,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="app-header">
-        <span class="app-header-icon">&#9851;</span>
-        <span class="app-header-title">EcoTrack</span>
-    </div>
+    {% include "_header.html" %}
 
     <div class="page-content">
     <h1>All Plastic Waste Reports</h1>
@@ -17,21 +14,40 @@
 
     <table>
         <tr>
-            <th>Location</th><th>Type</th><th>Quantity</th><th>Status</th><th>Date</th><th>Action</th>
+            <th>Location</th><th>Type</th><th>Quantity</th><th>Status</th><th>Date</th>
+            {% if is_admin %}<th>Action</th>{% endif %}
         </tr>
         {% for report in reports %}
         <tr>
-            <td>{{ report['location'] }}</td>
+            <td>
+                {{ report['location'] }}
+                {% if report['latitude'] is not none and report['longitude'] is not none %}
+                <br><a href="https://www.openstreetmap.org/?mlat={{ report['latitude'] }}&mlon={{ report['longitude'] }}#map=17/{{ report['latitude'] }}/{{ report['longitude'] }}" target="_blank" rel="noopener">&#128205; View on map</a>
+                {% endif %}
+            </td>
             <td>{{ report['plastic_type'] }}</td>
             <td>{{ report['quantity_estimate'] }}</td>
             <td><span class="status-{{ report['status'] }}">{{ report['status'] }}</span></td>
             <td>{{ report['date_reported'] }}</td>
-            <td><a href="/mark_cleaned/{{ report['report_id'] }}">Mark Cleaned</a></td>
+            {% if is_admin %}
+            <td class="actions">
+                {% if report['status'] != 'cleaned' %}
+                <form action="/mark_cleaned/{{ report['report_id'] }}" method="POST" class="inline-form">
+                    <button type="submit" class="link-btn">Mark Cleaned</button>
+                </form>
+                {% endif %}
+                <a href="/edit/{{ report['report_id'] }}">Edit</a>
+                <form action="/delete/{{ report['report_id'] }}" method="POST" class="inline-form"
+                      onsubmit="return confirm('Delete this report permanently?');">
+                    <button type="submit" class="link-btn danger">Delete</button>
+                </form>
+            </td>
+            {% endif %}
         </tr>
+        {% else %}
+        <tr class="empty-row"><td colspan="6">No reports yet.</td></tr>
         {% endfor %}
     </table>
-
-    <p class="nav-links"><a href="/">Back to Form</a></p>
     </div>
 </body>
 </html>

@@ -5,12 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 </head>
 <body>
-    <div class="app-header">
-        <span class="app-header-icon">&#9851;</span>
-        <span class="app-header-title">EcoTrack</span>
-    </div>
+    {% include "_header.html" %}
 
     <div class="page-content">
     <h1>Plastic Waste Dashboard</h1>
@@ -49,6 +47,8 @@
     {% endif %}
 
     <script>
+        Chart.register(ChartDataLabels);
+
         new Chart(document.getElementById('typeChart'), {
             type: 'pie',
             data: {
@@ -61,7 +61,18 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } }
+                plugins: {
+                    legend: { position: 'bottom' },
+                    datalabels: {
+                        color: '#FFFFFF',
+                        font: { weight: 'bold', size: 12 },
+                        formatter: function (value, ctx) {
+                            var data = ctx.chart.data.datasets[0].data;
+                            var total = data.reduce(function (a, b) { return a + b; }, 0);
+                            return (value / total * 100).toFixed(1) + '%';
+                        }
+                    }
+                }
             }
         });
 
@@ -78,13 +89,14 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                plugins: {
+                    legend: { display: false },
+                    datalabels: { display: false }
+                },
                 scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
             }
         });
     </script>
-
-    <p class="nav-links"><a href="/">Back to form</a></p>
     </div>
 </body>
 </html>

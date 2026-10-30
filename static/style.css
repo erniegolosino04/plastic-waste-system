@@ -259,3 +259,196 @@ canvas {
         padding: 3px 8px;
     }
 }
+
+/* ---------- Header extras ---------- */
+.header-auth {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+}
+
+.header-auth a {
+    color: #FFFFFF;
+    font-weight: 500;
+}
+
+.admin-badge {
+    background-color: #FAC775;
+    color: #633806;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* ---------- Nav buttons ---------- */
+.nav-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    max-width: 900px;
+    margin: 0 auto 20px;
+}
+
+.nav-buttons a {
+    background: #FFFFFF;
+    border: 1px solid #C7C7BE;
+    color: #3B6D11;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+}
+
+.nav-buttons a:hover {
+    background: #EAF3DE;
+    text-decoration: none;
+}
+
+.nav-buttons a.active {
+    background: #3B6D11;
+    border-color: #3B6D11;
+    color: #FFFFFF;
+}
+
+/* ---------- Pop-up notification ---------- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 16px;
+}
+
+.modal-box {
+    background: #FFFFFF;
+    border-radius: 14px;
+    border-top: 5px solid #639922;
+    padding: 22px 24px;
+    max-width: 340px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.modal-box.error {
+    border-top-color: #D85A30;
+}
+
+.modal-icon {
+    font-size: 30px;
+    color: #639922;
+}
+
+.modal-box.error .modal-icon {
+    color: #D85A30;
+}
+
+.modal-box p {
+    font-size: 14px;
+    margin: 8px 0 0;
+}
+
+.modal-box button {
+    width: auto;
+    padding: 8px 28px;
+    margin-top: 16px;
+}
+
+/* ---------- Map ---------- */
+#map {
+    height: 260px;
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid #C7C7BE;
+    margin-top: 4px;
+    z-index: 0;
+}
+
+.map-hint {
+    font-size: 12px;
+    color: #5F5E5A;
+    margin: 6px 0 0;
+}
+
+button.btn-secondary {
+    background: #FFFFFF;
+    color: #3B6D11;
+    border: 1px solid #639922;
+    margin-top: 4px;
+    margin-bottom: 8px;
+}
+
+button.btn-secondary:hover {
+    background: #EAF3DE;
+}
+
+/* ---------- Table actions ---------- */
+form.inline-form {
+    display: inline;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 0;
+}
+
+button.link-btn {
+    display: inline;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    color: #3B6D11;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+button.link-btn:hover {
+    background: none;
+    text-decoration: underline;
+}
+
+button.link-btn.danger {
+    color: #B3361A;
+}
+
+td.actions {
+    white-space: nowrap;
+}
+
+td.actions > * {
+    margin-right: 10px;
+}
+
+.empty-row td {
+    text-align: center;
+    color: #5F5E5A;
+}
+
+@media (max-width: 600px) {
+    #map {
+        height: 220px;
+    }
+
+    .nav-buttons a {
+        flex: 1 1 30%;
+        text-align: center;
+        padding: 8px 6px;
+    }
+
+    .header-auth {
+        gap: 8px;
+    }
+}

@@ -1,29 +1,116 @@
-from flask import Flask, render_template, request, redirect
+import os
+import hmac
 import sqlite3
+from functools import wraps
+from flask import Flask, render_template, request, redirect, flash, session
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-me")
+
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
+
+PLASTIC_TYPES = [
+    ("bottles", "Bottles"),
+    ("sachets", "Sachets"),
+    ("bags", "Bags"),
+    ("straws", "Straws"),
+    ("styrofoam", "Styrofoam"),
+    ("other", "Other"),
+]
+
+QUANTITIES = [
+    "Small (1-10 pieces)",
+    "Medium (11-50 pieces)",
+    "Large (51-100 pieces)",
+    "Very large (100+ pieces)",
+]
+
 
 def get_db_connection():
     conn = sqlite3.connect("database.db")
-    conn.row_factory = sqlite3.Row # lets us access columns by name
+    conn.row_factory = sqlite3.Row  # lets us access columns by name
     return conn
+
+
+def init_db():
+    """Create the table if missing and add GPS columns to older databases."""
+    conn = get_db_connection()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS reports (
+            report_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            location TEXT NOT NULL,
+            plastic_type TEXT NOT NULL,
+            quantity_estimate TEXT NOT NULL,
+            status TEXT DEFAULT 'sighted',
+            date_reported TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    columns = [row["name"] for row in conn.execute("PRAGMA table_info(reports)")]
+    if "latitude" not in columns:
+        conn.execute("ALTER TABLE reports ADD COLUMN latitude REAL")
+    if "longitude" not in columns:
+        conn.execute("ALTER TABLE reports ADD COLUMN longitude REAL")
+    conn.commit()
+    conn.close()
+
+
+init_db()
+
+
+@app.context_processor
+def inject_globals():
+    return {
+        "is_admin": session.get("is_admin", False),
+        "plastic_types": PLASTIC_TYPES,
+        "quantities": QUANTITIES,
+    }
+
+
+def parse_coord(value):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def admin_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not session.get("is_admin"):
+            flash("Please log in as admin to do that.", "error")
+            return redirect("/login")
+        return view(*args, **kwargs)
+    return wrapped
+
+
+# ---------- Public pages ----------
 
 @app.route("/")
 def report_form():
     return render_template("report_form.html")
 
+
 @app.route("/submit", methods=["POST"])
 def submit_report():
-    location = request.form["location"]
+    location = request.form["location"].strip()
     plastic_type = request.form["plastic_type"]
     quantity_estimate = request.form["quantity_estimate"]
+    latitude = parse_coord(request.form.get("latitude"))
+    longitude = parse_coord(request.form.get("longitude"))
 
     conn = get_db_connection()
-    conn.execute("INSERT INTO reports (location, plastic_type, quantity_estimate) VALUES (?, ?, ?)",
-    (location, plastic_type, quantity_estimate))
+    conn.execute(
+        "INSERT INTO reports (location, plastic_type, quantity_estimate, latitude, longitude) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (location, plastic_type, quantity_estimate, latitude, longitude),
+    )
     conn.commit()
     conn.close()
+
+    flash("Report submitted successfully! Thank you for helping.", "success")
     return redirect("/")
+
 
 @app.route("/reports")
 def view_reports():
@@ -32,23 +119,16 @@ def view_reports():
     conn.close()
     return render_template("view_reports.html", reports=reports)
 
-@app.route("/mark_cleaned/<int:report_id>")
-def mark_cleaned(report_id):
-    conn = get_db_connection()
-    conn.execute("UPDATE reports SET status = 'cleaned' WHERE report_id = ?", (report_id,))
-    conn.commit()
-    conn.close()
-    return redirect("/reports")
 
 @app.route("/dashboard")
 def dashboard():
     conn = get_db_connection()
 
     type_data = conn.execute(
-    "SELECT plastic_type, COUNT(*) as total FROM reports GROUP BY plastic_type").fetchall()
+        "SELECT plastic_type, COUNT(*) as total FROM reports GROUP BY plastic_type").fetchall()
 
     location_data = conn.execute(
-    "SELECT location, COUNT(*) as total FROM reports GROUP BY location").fetchall()
+        "SELECT location, COUNT(*) as total FROM reports GROUP BY location").fetchall()
 
     conn.close()
 
@@ -67,5 +147,95 @@ def dashboard():
     )
 
 
+# ---------- Admin login ----------
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if session.get("is_admin"):
+        return redirect("/reports")
+
+    if request.method == "POST":
+        username = request.form.get("username", "")
+        password = request.form.get("password", "")
+        user_ok = hmac.compare_digest(username.encode(), ADMIN_USERNAME.encode())
+        pass_ok = hmac.compare_digest(password.encode(), ADMIN_PASSWORD.encode())
+        if user_ok and pass_ok:
+            session["is_admin"] = True
+            flash("Welcome back, admin!", "success")
+            return redirect("/reports")
+        flash("Incorrect username or password.", "error")
+        return redirect("/login")
+
+    return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    session.pop("is_admin", None)
+    flash("You have been logged out.", "success")
+    return redirect("/")
+
+
+# ---------- Admin actions ----------
+
+@app.route("/mark_cleaned/<int:report_id>", methods=["POST"])
+@admin_required
+def mark_cleaned(report_id):
+    conn = get_db_connection()
+    conn.execute("UPDATE reports SET status = 'cleaned' WHERE report_id = ?", (report_id,))
+    conn.commit()
+    conn.close()
+    flash("Report marked as cleaned.", "success")
+    return redirect("/reports")
+
+
+@app.route("/edit/<int:report_id>", methods=["GET", "POST"])
+@admin_required
+def edit_report(report_id):
+    conn = get_db_connection()
+
+    if request.method == "POST":
+        status = request.form.get("status", "sighted")
+        if status not in ("sighted", "cleaned"):
+            status = "sighted"
+        conn.execute(
+            "UPDATE reports SET location = ?, plastic_type = ?, quantity_estimate = ?, "
+            "status = ?, latitude = ?, longitude = ? WHERE report_id = ?",
+            (
+                request.form["location"].strip(),
+                request.form["plastic_type"],
+                request.form["quantity_estimate"],
+                status,
+                parse_coord(request.form.get("latitude")),
+                parse_coord(request.form.get("longitude")),
+                report_id,
+            ),
+        )
+        conn.commit()
+        conn.close()
+        flash("Report updated successfully.", "success")
+        return redirect("/reports")
+
+    report = conn.execute("SELECT * FROM reports WHERE report_id = ?", (report_id,)).fetchone()
+    conn.close()
+
+    if report is None:
+        flash("Report not found.", "error")
+        return redirect("/reports")
+
+    return render_template("edit_report.html", report=report)
+
+
+@app.route("/delete/<int:report_id>", methods=["POST"])
+@admin_required
+def delete_report(report_id):
+    conn = get_db_connection()
+    conn.execute("DELETE FROM reports WHERE report_id = ?", (report_id,))
+    conn.commit()
+    conn.close()
+    flash("Report deleted.", "success")
+    return redirect("/reports")
+
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=500)
+    app.run(host="0.0.0.0", port=5000)

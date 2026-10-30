@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    {% include "_header.html" %}
+
+    <div class="page-content">
+    <h1>Edit Report</h1>
+    <p class="subtitle">Update the details of this report.</p>
+
+    <form action="/edit/{{ report['report_id'] }}" method="POST">
+        <label>Location:</label>
+        <input type="text" name="location" id="location" value="{{ report['location'] }}" placeholder="e.g. Brgy. Taft" required>
+
+        <label>Pin the exact spot (optional):</label>
+        <button type="button" id="locateBtn" class="btn-secondary">&#128205; Use my current location</button>
+        <div id="map"></div>
+        <p class="map-hint" id="mapHint">Tap the map to move the pin.</p>
+        <input type="hidden" name="latitude" id="latitude" value="{{ report['latitude'] if report['latitude'] is not none else '' }}">
+        <input type="hidden" name="longitude" id="longitude" value="{{ report['longitude'] if report['longitude'] is not none else '' }}">
+
+        <label>Plastic Type:</label>
+        <select name="plastic_type" required>
+            {% for value, label in plastic_types %}
+            <option value="{{ value }}" {% if value == report['plastic_type'] %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+
+        <label>Estimated Quantity:</label>
+        <select name="quantity_estimate" required>
+            {% if report['quantity_estimate'] not in quantities %}
+            <option value="{{ report['quantity_estimate'] }}" selected>{{ report['quantity_estimate']|capitalize }} (old value)</option>
+            {% endif %}
+            {% for q in quantities %}
+            <option value="{{ q }}" {% if q == report['quantity_estimate'] %}selected{% endif %}>{{ q }}</option>
+            {% endfor %}
+        </select>
+
+        <label>Status:</label>
+        <select name="status">
+            <option value="sighted" {% if report['status'] == 'sighted' %}selected{% endif %}>Sighted</option>
+            <option value="cleaned" {% if report['status'] == 'cleaned' %}selected{% endif %}>Cleaned</option>
+        </select>
+
+        <button type="submit">Save Changes</button>
+    </form>
+    </div>
+
+    <script src="{{ url_for('static', filename='map-picker.js') }}"></script>
+</body>
+</html>
