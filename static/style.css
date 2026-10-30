@@ -206,60 +206,6 @@ canvas {
     font-size: 13px;
 }
 
-
-
-
-@media (max-width: 600px) {
-    body {
-        padding: 12px;
-    }
-
-    .app-header {
-        margin: -12px -12px 16px -12px;
-        padding: 12px 16px;
-    }
-
-    h1 {
-        font-size: 18px;
-    }
-
-    p.subtitle {
-        font-size: 12px;
-    }
-
-    form {
-        max-width: 100%;
-        padding: 16px;
-    }
-
-    /* Let the reports table scroll sideways instead of squeezing/breaking */
-    table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-    }
-
-    th, td {
-        padding: 8px;
-        font-size: 12px;
-    }
-
-    /* Stack dashboard charts into a single column */
-    .dashboard-grid {
-        grid-template-columns: 1fr;
-        gap: 14px;
-    }
-
-    .chart-container {
-        height: 220px;
-    }
-
-    .hotspot-flag {
-        font-size: 11px;
-        padding: 3px 8px;
-    }
-}
-
 /* ---------- Header extras ---------- */
 .header-auth {
     margin-left: auto;
@@ -363,7 +309,7 @@ canvas {
     margin-top: 16px;
 }
 
-/* ---------- Map ---------- */
+/* ---------- Map (report form / edit page) ---------- */
 #map {
     height: 260px;
     width: 100%;
@@ -437,18 +383,213 @@ td.actions > * {
     color: #5F5E5A;
 }
 
+/* ---------- Summary cards ---------- */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    max-width: 900px;
+    margin: 0 auto 20px;
+}
+
+.stat-card {
+    background: #FFFFFF;
+    border: 1px solid #E0E0DA;
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 26px;
+    font-weight: 600;
+    color: #3B6D11;
+}
+
+.stat-number.amber {
+    color: #BA7517;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #5F5E5A;
+    margin-top: 2px;
+}
+
+/* ---------- Chart cards ---------- */
+.chart-card.wide {
+    grid-column: 1 / -1;
+}
+
+.chart-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.chart-head h3 {
+    margin: 0;
+}
+
+/* ---------- Toggle buttons ---------- */
+.toggle-group {
+    display: flex;
+    gap: 6px;
+}
+
+button.toggle-btn {
+    width: auto;
+    margin: 0;
+    padding: 4px 12px;
+    background: #FFFFFF;
+    color: #3B6D11;
+    border: 1px solid #C7C7BE;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+button.toggle-btn:hover {
+    background: #EAF3DE;
+}
+
+button.toggle-btn.active {
+    background: #3B6D11;
+    border-color: #3B6D11;
+    color: #FFFFFF;
+}
+
+/* ---------- Export button ---------- */
+a.export-btn {
+    display: inline-block;
+    background: #639922;
+    color: #FFFFFF;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+a.export-btn:hover {
+    background: #3B6D11;
+    text-decoration: none;
+}
+
+/* ---------- Reports map page ---------- */
+.map-filters {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+#reportsMap {
+    height: 60vh;
+    min-height: 320px;
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid #E0E0DA;
+    z-index: 0;
+}
+
+.map-legend {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: #5F5E5A;
+}
+
+.map-legend .dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-left: 10px;
+}
+
+.map-legend .dot.sighted {
+    background: #EF9F27;
+}
+
+.map-legend .dot.cleaned {
+    background: #639922;
+}
+
+/* ---------- Mobile (keep this block LAST) ---------- */
 @media (max-width: 600px) {
-    #map {
-        height: 220px;
+    body {
+        padding: 12px;
     }
 
-    .nav-buttons a {
-        flex: 1 1 30%;
-        text-align: center;
-        padding: 8px 6px;
+    .app-header {
+        margin: -12px -12px 16px -12px;
+        padding: 12px 16px;
     }
 
     .header-auth {
         gap: 8px;
+    }
+
+    h1 {
+        font-size: 18px;
+    }
+
+    p.subtitle {
+        font-size: 12px;
+    }
+
+    form {
+        max-width: 100%;
+        padding: 16px;
+    }
+
+    /* 4 nav buttons fit as 2 x 2 on phones */
+    .nav-buttons a {
+        flex: 1 1 40%;
+        text-align: center;
+        padding: 8px 6px;
+    }
+
+    /* Let the reports table scroll sideways instead of squeezing */
+    table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    th, td {
+        padding: 8px;
+        font-size: 12px;
+    }
+
+    #map {
+        height: 220px;
+    }
+
+    .stat-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .chart-container {
+        height: 220px;
+    }
+
+    .chart-head {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .hotspot-flag {
+        font-size: 11px;
+        padding: 3px 8px;
     }
 }

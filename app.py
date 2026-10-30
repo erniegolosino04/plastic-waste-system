@@ -1,8 +1,10 @@
 import os
+import csv
+import io
 import hmac
 import sqlite3
 from functools import wraps
-from flask import Flask, render_template, request, redirect, flash, session
+from flask import Flask, render_template, request, redirect, flash, session, Response
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-change-me")
@@ -120,6 +122,21 @@ def view_reports():
     return render_template("view_reports.html", reports=reports)
 
 
+@app.route("/map")
+def reports_map():
+    conn = get_db_connection()
+    rows = conn.execute(
+        "SELECT report_id, location, plastic_type, quantity_estimate, status, date_reported, "
+        "latitude, longitude FROM reports "
+        "WHERE latitude IS NOT NULL AND longitude IS NOT NULL"
+    ).fetchall()
+    total = conn.execute("SELECT COUNT(*) FROM reports").fetchone()[0]
+    conn.close()
+
+    pins = [dict(row) for row in rows]
+    return render_template("map.html", pins=pins, unpinned=total - len(pins))
+
+
 @app.route("/dashboard")
 def dashboard():
     conn = get_db_connection()
@@ -130,19 +147,45 @@ def dashboard():
     location_data = conn.execute(
         "SELECT location, COUNT(*) as total FROM reports GROUP BY location").fetchall()
 
+    totals = conn.execute(
+        "SELECT COUNT(*) AS total, "
+        "SUM(CASE WHEN status = 'cleaned' THEN 1 ELSE 0 END) AS cleaned FROM reports").fetchone()
+
+    this_month = conn.execute(
+        "SELECT COUNT(*) FROM reports "
+        "WHERE strftime('%Y-%m', date_reported, '+8 hours') = strftime('%Y-%m', 'now', '+8 hours')"
+    ).fetchone()[0]
+
+    # Week starts on Monday; +8 hours converts the stored UTC time to Philippine time
+    weekly = conn.execute(
+        "SELECT date(date_reported, '+8 hours', 'weekday 0', '-6 days') AS period, COUNT(*) AS total "
+        "FROM reports GROUP BY period ORDER BY period").fetchall()
+
+    monthly = conn.execute(
+        "SELECT strftime('%Y-%m', date_reported, '+8 hours') AS period, COUNT(*) AS total "
+        "FROM reports GROUP BY period ORDER BY period").fetchall()
+
     conn.close()
 
-    type_labels = [row["plastic_type"] for row in type_data]
-    type_values = [row["total"] for row in type_data]
-
-    location_labels = [row["location"] for row in location_data]
-    location_values = [row["total"] for row in location_data]
+    total = totals["total"] or 0
+    cleaned = totals["cleaned"] or 0
+    pending = total - cleaned
+    cleanup_rate = round(cleaned / total * 100, 1) if total else 0
 
     return render_template("dashboard.html",
-        type_labels=type_labels,
-        type_values=type_values,
-        location_labels=location_labels,
-        location_values=location_values,
+        type_labels=[row["plastic_type"] for row in type_data],
+        type_values=[row["total"] for row in type_data],
+        location_labels=[row["location"] for row in location_data],
+        location_values=[row["total"] for row in location_data],
+        total=total,
+        pending=pending,
+        cleaned=cleaned,
+        cleanup_rate=cleanup_rate,
+        this_month=this_month,
+        weekly_labels=[row["period"] for row in weekly],
+        weekly_values=[row["total"] for row in weekly],
+        monthly_labels=[row["period"] for row in monthly],
+        monthly_values=[row["total"] for row in monthly],
         zip=zip
     )
 
@@ -237,5 +280,21 @@ def delete_report(report_id):
     return redirect("/reports")
 
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+def csv_safe(value):
+    """Stop Excel from treating text like '=1+1' as a formula."""
+    text = "" if value is None else str(value)
+    return "'" + text if text[:1] in ("=", "+", "-", "@") else text
+
+
+@app.route("/export.csv")
+@admin_required
+def export_csv():
+    conn = get_db_connection()
+    rows = conn.execute(
+        "SELECT report_id, location, plastic_type, quantity_estimate, status, "
+        "date_reported, latitude, longitude FROM reports ORDER BY date_reported DESC"
+    ).fetchall()
+    conn.close()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
